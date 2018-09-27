@@ -1,0 +1,79 @@
+package eval
+
+import (
+	"fmt"
+	"math"
+)
+
+type Expr interface {
+	Eval(env Env) float64
+}
+
+type Var string
+
+type literal float64
+
+type unary struct {
+	op rune
+	x  Expr
+}
+
+type binary struct {
+	op   rune
+	x, y Expr
+}
+
+type call struct {
+	fn   string
+	args []Expr
+}
+
+type Env map[Var]float64
+
+func (v Var) Eval(env Env) float64 {
+	return env[v]
+}
+
+func (l literal) Eval(_ Env) float64 {
+	return float64(l)
+}
+
+func (u unary) Eval(env Env) float64 {
+	x := u.x.Eval(env)
+	switch u.op {
+	case '+':
+		return +x
+	case '-':
+		return -x
+	}
+	panic(fmt.Sprintf("unsupported unary operator: %q", u.op))
+}
+
+func (b binary) Eval(env Env) float64 {
+	x := b.x.Eval(env)
+	y := b.y.Eval(env)
+
+	switch b.op {
+	case '+':
+		return x + y
+	case '-':
+		return x - y
+	case '*':
+		return x * y
+	case '/':
+		return x / y
+	}
+	panic(fmt.Sprintf("unsupported binary operator: %q", b.op))
+}
+
+func (c call) Eval(env Env) float64 {
+	switch c.fn {
+	case "pow":
+		return math.Pow(c.args[0].Eval(env), c.args[1].Eval(env))
+	case "sin":
+		return math.Sin(c.args[0].Eval(env))
+	case "sqrt":
+		return math.Sqrt(c.args[0].Eval(env))
+	}
+	panic(fmt.Sprintf("unsupported function call: %s", c.fn))
+}
